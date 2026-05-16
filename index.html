@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Lucidity Therapeutics | Illuminate the Mind</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none; /* subtle, prevents accidental highlight on canvas */
+        }
+
+        body {
+            background-color: #05070a;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, 'Poppins', sans-serif;
+            overflow-x: hidden;
+            color: #eef5ff;
+            line-height: 1.4;
+        }
+
+        /* canvas background: dynamic glowing brain outline with mouseover lighting */
+        #brainCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: auto; /* crucial: to catch mousemove for lighting effect */
+            display: block;
+            background: radial-gradient(circle at 30% 10%, #0a0f1a, #010101);
+        }
+
+        /* content overlay: elegant, readable, semi-transparent backdrop */
+        .content {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            backdrop-filter: blur(2px);
+            pointer-events: none; /* allow clicks to pass to canvas for mouse tracking, but make text selectable? */
+        }
+
+        /* but we need some interactive elements to be clickable (buttons etc) */
+        .content * {
+            pointer-events: auto;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(8, 12, 18, 0.65);
+            backdrop-filter: blur(12px);
+            border-radius: 2.5rem;
+            padding: 2.8rem 2rem;
+            border: 1px solid rgba(80, 180, 255, 0.2);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 160, 255, 0.1);
+            transition: transform 0.3s ease, border-color 0.2s;
+        }
+
+        .container:hover {
+            border-color: rgba(0, 200, 255, 0.5);
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.6), 0 0 35px rgba(0, 180, 255, 0.25);
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #FFFFFF, #a0d0ff, #5f9eff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin-bottom: 0.75rem;
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: #bbdbff;
+            margin-bottom: 2rem;
+            letter-spacing: 0.3px;
+            border-bottom: 1px dashed rgba(100, 180, 255, 0.5);
+            display: inline-block;
+            padding-bottom: 0.5rem;
+        }
+
+        .description {
+            font-size: 1.1rem;
+            max-width: 650px;
+            margin: 1.5rem auto;
+            color: #d9ecff;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        .services {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 2.5rem 0;
+        }
+
+        .card {
+            background: rgba(15, 25, 40, 0.7);
+            backdrop-filter: blur(5px);
+            border-radius: 1.8rem;
+            padding: 1.2rem 1.8rem;
+            width: 180px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(70, 150, 255, 0.2);
+            cursor: default;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            background: rgba(25, 45, 70, 0.9);
+            border-color: #3a9eff;
+            box-shadow: 0 12px 22px rgba(0, 0, 0, 0.4), 0 0 15px rgba(58, 158, 255, 0.3);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card h3 {
+            font-size: 1.3rem;
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+            color: #cae5ff;
+        }
+
+        .card p {
+            font-size: 0.85rem;
+            color: #b0ceff;
+        }
+
+        .cta-button {
+            display: inline-block;
+            margin-top: 1.2rem;
+            padding: 0.9rem 2.2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            background: rgba(0, 120, 210, 0.85);
+            border: none;
+            border-radius: 60px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.25s;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 5px 15px rgba(0, 80, 160, 0.4);
+            letter-spacing: 0.5px;
+            font-family: inherit;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .cta-button:hover {
+            background: #0099ff;
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 150, 255, 0.5);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        footer {
+            margin-top: 3rem;
+            font-size: 0.75rem;
+            opacity: 0.6;
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 650px) {
+            h1 { font-size: 2.4rem; }
+            .container { padding: 1.8rem; }
+            .services { gap: 1rem; }
+            .card { width: 150px; padding: 1rem; }
+            .description { font-size: 0.95rem; }
+        }
+
+        /* subtle glow effect for text */
+        .glow-text {
+            text-shadow: 0 0 8px rgba(0,160,255,0.3);
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="brainCanvas"></canvas>
+
+<div class="content">
+    <div class="container">
+        <h1>Lucidity Therapeutics</h1>
+        <div class="tagline">clarity · insight · renewal</div>
+        <div class="description">
+            Pioneering a one-and-done epigenetic gene therapy for mild cognitive impairment — targeting the earliest, most actionable stage on the path to Alzheimer's disease.
+
+        </div>
+        
+        <div class="services">
+            <div class="card">
+                <div class="card-icon">🧠</div>
+                <h3>First-in-Class Therapy</h3>
+                <p>Developing a single-dose therapy targeting MCI — the earliest clinically discernible milestone toward Alzheimer's.
+</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">✨</div>
+                <h3>Broad Platform Potential</h3>
+                <p>Epigenetic platform extendable beyond MCI to multiple genetic diseases, with out-licensing to fund clinical programs.
+</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">🌿</div>
+                <h3>Fully Unencumbered IP
+</h3>
+                <p>No licensing fees, no third-party restrictions on our core technology
+</p>
+            </div>
+        </div>
+        
+        <button class="cta-button" id="discoverBtn">Awaken your potential →</button>
+        <footer>© 2025 Lucidity Therapeutics — illuminate the path within</footer>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // --- Setup canvas and dynamic glowing brain outline with mouseover lighting effect.
+        const canvas = document.getElementById('brainCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let mouseX = -1000, mouseY = -1000;
+        let lightIntensity = 0;      // 0..1 -> brightness of the "lighting" effect around mouse
+        let targetIntensity = 0;
+        
+        // Store brain points (outline + internal details)
+        let brainPoints = [];
+        let brainGlowPoints = [];   // for extra stylized effect
+        
+        // We'll use a stylized, artistic brain outline – symmetrical & intricate enough to feel "cerebral"
+        // Approach: generate a parametric shape: combination of lobes, hemispheres, cerebellum, brainstem hints.
+        // This creates a recognizable but abstract luminous brain.
+        
+        function generateBrainShapePoints() {
+            const points = [];
+            // We'll create 2 hemispheres + details, total ~200 points for organic feel.
+            // Central line: x offset 0, plus sin/cos variations.
+            // Using a scaling factor and mapping angles.
+            const centerX = 0;
+            const centerY = 0;
+            const widthScale = 90;
+            const heightScale = 110;
+            
+            // Outer contour: top lobe (frontal), central curve, occipital and cerebellum.
+            // Define parameter t from 0 to 2PI, but modulated.
+            for (let i = 0; i <= 360; i++) {
+                let rad = i * Math.PI / 180;
+                // create asymmetry? but symmetrical brain: nice
+                let xMod = Math.sin(rad * 2) * 0.08;   // small wobble
+                let yMod = Math.cos(rad * 1.5) * 0.05;
+                
+                // Base radius function to shape brain: 
+                // frontal lobe (rad around 0 rad -> right side contour? We'll do full outline with radial distance)
+                // Actually easier: parametric from top (0) around clockwise.
+                let angle = rad;
+                let radDistance = 0.95 + 0.15 * Math.sin(angle * 3) * Math.cos(angle * 2);
+                // Make brain shape more distinct:
+                // frontal bump at angle ~ 0 (right) and PI (left)
+                let frontal = 1 + 0.2 * Math.cos(angle) ** 4;
+                let occipital = 1 + 0.12 * Math.sin(angle + Math.PI/2) ** 2;
+                let topFlatten = 1 - 0.05 * Math.abs(Math.sin(angle)) ** 2;
+                let radialFactor = frontal * occipital * topFlatten * radDistance;
+                
+                let x = Math.cos(angle) * widthScale * radialFactor;
+                let y = Math.sin(angle) * heightScale * radialFactor * 0.95;
+                
+                // add central indentation (sulcus)
+                let centralIndent = Math.abs(x) < 15 ? Math.sin(y * 0.12) * 5 : 0;
+                x += centralIndent * (x > 0 ? -1 : 1) * 0.5;
+                
+                // brainstem hint on bottom
+                if (y > 75 && Math.abs(x) < 20) {
+                    y += 12 * (1 - Math.abs(x)/25);
+                    x *= 0.8;
+                }
+                
+                points.push({ x: x, y: y, baseX: x, baseY: y });
+            }
+            
+            // add inner detail points (corpus callosum / thalamus style) not full outline but glowing sub-shape
+            const innerPoints = [];
+            for (let t = 0; t <= 1; t += 0.03) {
+                let ang = t * Math.PI * 2;
+                let radInner = 45 + 12 * Math.sin(ang * 5);
+                let ix = Math.cos(ang) * radInner * 0.7;
+                let iy = Math.sin(ang) * radInner * 0.8 + 8;
+                innerPoints.push({ x: ix, y: iy });
+            }
+            
+            return { outer: points, inner: innerPoints };
+        }
+        
+        let brainStructure = null;
+        
+        // Additional decorative "neuron sparks" that react to mouse
+        let particleSparks = [];
+        const SPARK_COUNT = 60;
+        
+        function initSparks() {
+            for (let i = 0; i < SPARK_COUNT; i++) {
+                particleSparks.push({
+                    x: (Math.random() - 0.5) * 220,
+                    y: (Math.random() - 0.5) * 180,
+                    size: 1 + Math.random() * 2.5,
+                    alpha: 0.2 + Math.random() * 0.4,
+                    speedX: (Math.random() - 0.5) * 0.3,
+                    speedY: (Math.random() - 0.5) * 0.2,
+                });
+            }
+        }
+        
+        function updateSparks(mx, my, intensity) {
+            // sparks drift and get attracted lightly to light source (mouse) to create dynamic feeling
+            for (let p of particleSparks) {
+                // gentle movement
+                p.x += p.speedX;
+                p.y += p.speedY;
+                // wrap loosely within brain bounding area
+                if (p.x > 150) p.x = -140;
+                if (p.x < -150) p.x = 140;
+                if (p.y > 130) p.y = -120;
+                if (p.y < -120) p.y = 120;
+                
+                // mouse influence: if mouse close, spark get brighter and slight repulsion/attraction (makes it alive)
+                if (mx !== -1000 && my !== -1000) {
+                    let dx = (p.x - mx);
+                    let dy = (p.y - my);
+                    let dist = Math.hypot(dx, dy);
+                    if (dist < 70) {
+                        // add micro movement away from mouse, creating "light ripple"
+                        let angle = Math.atan2(dy, dx);
+                        let force = (1 - dist/70) * 0.8;
+                        p.x += Math.cos(angle) * force * 1.2;
+                        p.y += Math.sin(angle) * force * 1.2;
+                    }
+                }
+                // reset boundary after move
+                p.x = Math.min(160, Math.max(-160, p.x));
+                p.y = Math.min(140, Math.max(-130, p.y));
+            }
+        }
+        
+        function drawGlowBrain(mouseXCanvas, mouseYCanvas, intensity) {
+            if (!brainStructure) return;
+            const { outer, inner } = brainStructure;
+            
+            // Clear canvas with dark translucent to create trailing effect? Better to fully draw dark bg
+            ctx.clearRect(0, 0, width, height);
+            
+            // Deep space gradient background
+            let grad = ctx.createLinearGradient(0, 0, width, height);
+            grad.addColorStop(0, '#020408');
+            grad.addColorStop(1, '#0a0f17');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+            
+            // add subtle nebula dots
+            ctx.save();
+            ctx.shadowBlur = 0;
+            for (let i = 0; i < 150; i++) {
+                if (i%2 === 0) continue;
+                ctx.fillStyle = `rgba(70, 150, 230, ${0.03 + Math.sin(Date.now() * 0.001 + i) * 0.02})`;
+                ctx.beginPath();
+                ctx.arc( (i * 131) % width, (i * 253) % height, 1.2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Center and transform to canvas center
+            const centerXCanvas = width / 2;
+            const centerYCanvas = height / 2;
+            ctx.save();
+            ctx.translate(centerXCanvas, centerYCanvas);
+            
+            // scale based on screen size (responsive)
+            let scale = Math.min(width / 1200, height / 800, 1.1);
+            scale = Math.min(scale, 1.2);
+            ctx.scale(scale, scale);
+            
+            // ---- DRAW GLOWING BRAIN OUTLINE WITH DYNAMIC MOUSEOVER LIGHTING ----
+            // The "lighting" effect: we compute distance from each vertex to mouse (canvas space relative to brain)
+            // but to make it responsive we need to translate mouse coords to brain local space.
+            let localMouse = { x: -9999, y: -9999 };
+            if (mouseXCanvas !== -1000 && mouseYCanvas !== -1000) {
+                // convert mouse canvas coords to local brain coordinates (centered, scaled)
+                localMouse.x = (mouseXCanvas - centerXCanvas) / scale;
+                localMouse.y = (mouseYCanvas - centerYCanvas) / scale;
+            }
+            
+            // 1) Draw outer brain outline with thick glow and dynamic lighting intensity per segment.
+            // first create path for outline
+            ctx.beginPath();
+            for (let i = 0; i < outer.length; i++) {
+                let p = outer[i];
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            }
+            ctx.closePath();
+            
+            // dynamic stroke style depends on mouse proximity and intensity (targetIntensity)
+            let globalIntensity = intensity;  // 0..1 smooth
+            // base color: cyan/blue, brighten near mouse
+            let baseR = 40 + 80 * globalIntensity;
+            let baseG = 120 + 110 * globalIntensity;
+            let baseB = 210 + 45 * globalIntensity;
+            
+            // Outline shadow glow
+            ctx.shadowBlur = 12 + 16 * globalIntensity;
+            ctx.shadowColor = `rgba(0, 180, 255, ${0.7 + globalIntensity * 0.3})`;
+            ctx.lineWidth = 2.8 + 1.2 * globalIntensity;
+            ctx.strokeStyle = `rgb(${baseR}, ${baseG}, ${baseB})`;
+            ctx.stroke();
+            
+            // additional inner outline more electric
+            ctx.lineWidth = 1.5;
+            ctx.shadowBlur = 8;
+            ctx.strokeStyle = `rgba(140, 200, 255, ${0.6 + globalIntensity * 0.4})`;
+            ctx.stroke();
+            
+            // 2) lighting effect: draw radial gradient "spotlight" around mouse on top of brain
+            if (localMouse.x !== -9999 && globalIntensity > 0.05) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                let radGrad = ctx.createRadialGradient(localMouse.x, localMouse.y, 5, localMouse.x, localMouse.y, 48 + 25 * globalIntensity);
+                radGrad.addColorStop(0, `rgba(255, 210, 100, ${0.6 * globalIntensity})`);
+                radGrad.addColorStop(0.5, `rgba(80, 180, 255, ${0.35 * globalIntensity})`);
+                radGrad.addColorStop(1, 'rgba(0, 30, 70, 0)');
+                ctx.fillStyle = radGrad;
+                ctx.beginPath();
+                ctx.arc(localMouse.x, localMouse.y, 90, 0, Math.PI*2);
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            // 3) Inner neural details + also glowing lines (corpus callosum)
+            ctx.beginPath();
+            ctx.lineWidth = 1.8;
+            ctx.shadowBlur = 8;
+            for (let i = 0; i < inner.length; i++) {
+                let pt = inner[i];
+                let next = inner[(i+1)%inner.length];
+                ctx.beginPath();
+                ctx.moveTo(pt.x, pt.y);
+                ctx.lineTo(next.x, next.y);
+                let distToMouse = (localMouse.x !== -9999) ? Math.hypot(pt.x - localMouse.x, pt.y - localMouse.y) : 999;
+                let factor = Math.max(0, 1 - distToMouse / 60);
+                let bright = 0.3 + globalIntensity * 0.6 + factor * 0.5;
+                ctx.strokeStyle = `rgba(100, 200, 255, ${0.5 + bright * 0.5})`;
+                ctx.stroke();
+            }
+            
+            // add glowing dotted highlights on the brain surface (like synaptic firing)
+            for (let i = 0; i < outer.length; i+=12) {
+                let p = outer[i];
+                let dToMouse = (localMouse.x !== -9999) ? Math.hypot(p.x - localMouse.x, p.y - localMouse.y) : 200;
+                let glowSize = 2.5;
+                let alphaGlow = 0.3;
+                if (dToMouse < 45 && globalIntensity > 0.2) {
+                    alphaGlow = 0.9 * (1 - dToMouse/45);
+                    glowSize = 4;
+                } else {
+                    alphaGlow = 0.2 + globalIntensity * 0.25;
+                }
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, glowSize, 0, Math.PI*2);
+                ctx.fillStyle = `rgba(255, 220, 120, ${alphaGlow})`;
+                ctx.fill();
+                ctx.shadowBlur = 6;
+                ctx.fillStyle = `rgba(0, 180, 240, ${alphaGlow * 0.9})`;
+                ctx.arc(p.x, p.y, glowSize*0.6, 0, Math.PI*2);
+                ctx.fill();
+            }
+            
+            // 4) animated particles (sparks) with mouse influence lighting
+            for (let s of particleSparks) {
+                let distToMs = (localMouse.x !== -9999) ? Math.hypot(s.x - localMouse.x, s.y - localMouse.y) : 500;
+                let sparkBright = s.alpha;
+                if (distToMs < 45 && globalIntensity > 0.1) {
+                    let extra = (1 - distToMs/45) * 0.8;
+                    sparkBright = Math.min(1, s.alpha + extra);
+                } else {
+                    sparkBright = s.alpha + globalIntensity * 0.25;
+                }
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size * (0.8 + globalIntensity * 0.6), 0, Math.PI*2);
+                ctx.fillStyle = `rgba(255, 180, 80, ${sparkBright * 0.7})`;
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size * 0.5, 0, Math.PI*2);
+                ctx.fillStyle = `rgba(80, 180, 255, ${sparkBright * 0.9})`;
+                ctx.fill();
+            }
+            
+            // central 'third eye' glow subtle
+            ctx.shadowBlur = 14;
+            ctx.beginPath();
+            ctx.arc(0, -15, 8 + 3*globalIntensity, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(80, 200, 255, ${0.2 + globalIntensity*0.3})`;
+            ctx.fill();
+            
+            ctx.restore(); // restore transformation
+            
+            // additional canvas-wide glow texturing
+            ctx.restore(); // pop from previous save? careful: we had two saves? one after gradient, one after translate. just balance.
+            // Actually save count: one earlier before translate, then after translate+scale, we called restore once. need final restore:
+            // corrected: we had ctx.save, then translate, then later ctx.restore at end, good.
+        }
+        
+        // ---- animation loop and mouse tracking ----
+        let animationId;
+        
+        function updateLightIntensity() {
+            // smooth interpolation for intensity based on mouse proximity & movement
+            let distToBrainCenter = 999;
+            if (mouseX !== -1000 && mouseY !== -1000 && width && height) {
+                const centerX = width/2, centerY = height/2;
+                let dx = mouseX - centerX, dy = mouseY - centerY;
+                distToBrainCenter = Math.hypot(dx, dy);
+                let maxDist = Math.min(width, height) * 0.6;
+                let rawIntensity = 1 - Math.min(1, distToBrainCenter / maxDist);
+                rawIntensity = Math.pow(rawIntensity, 1.3);
+                if (distToBrainCenter < 110) rawIntensity = 0.95;
+                targetIntensity = Math.min(1, rawIntensity * 1.2);
+            } else {
+                targetIntensity = 0.05;
+            }
+            // smooth easing
+            lightIntensity = lightIntensity * 0.92 + targetIntensity * 0.08;
+        }
+        
+        function animate() {
+            if (!canvas) return;
+            updateLightIntensity();
+            if (mouseX !== -1000 && mouseY !== -1000) {
+                updateSparks(mouseX - width/2, mouseY - height/2, lightIntensity);
+            } else {
+                updateSparks(0, 0, lightIntensity);
+            }
+            drawGlowBrain(mouseX, mouseY, lightIntensity);
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            drawGlowBrain(mouseX, mouseY, lightIntensity);
+        }
+        
+        function onMouseMove(e) {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        }
+        
+        function onMouseLeave() {
+            mouseX = -1000;
+            mouseY = -1000;
+            targetIntensity = 0;
+        }
+        
+        function init() {
+            brainStructure = generateBrainShapePoints();
+            initSparks();
+            resizeCanvas();
+            window.addEventListener('resize', () => { resizeCanvas(); });
+            canvas.addEventListener('mousemove', onMouseMove);
+            canvas.addEventListener('mouseleave', onMouseLeave);
+            animate();
+        }
+        
+        init();
+        
+        // Button action
+        const btn = document.getElementById('discoverBtn');
+        if (btn) {
+            btn.addEventListener('click', () => {
+                alert("✨ Welcome to Lucidity Therapeutics — illuminating pathways to mental clarity throughout our golden years. Stay tuned for more as we progress towards our goal of protecting our minds from the ravages of time.");
+            });
+        }
+    })();
+</script>
+</body>
+</html>
